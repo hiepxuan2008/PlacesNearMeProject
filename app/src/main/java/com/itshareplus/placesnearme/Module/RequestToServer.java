@@ -15,15 +15,14 @@ public class RequestToServer {
         POST, GET
     }
 
-    public static String ServerURL = "http://udemydownloader.com/";
-    public static String ServerHandle = ServerURL + "Android/PlaceNearMe/handler.php";
+    public static String ServerURL = "http://itshareplus.com/";
 
     private static AsyncHttpClient client = new AsyncHttpClient();
 
-    public static void sendRequest(Method method, RequestParams params, ResponseHandlerInterface responseHandler) {
+    public static void sendRequest(String targetURl, Method method, RequestParams params, ResponseHandlerInterface responseHandler) {
         if (method == Method.GET)
-            client.get(ServerHandle, params, responseHandler);
+            client.get(ServerURL + targetURl, params, responseHandler);
         else if (method == Method.POST)
-            client.post(ServerHandle, params, responseHandler);
+            client.post(ServerURL + targetURl, params, responseHandler);
     }
 }

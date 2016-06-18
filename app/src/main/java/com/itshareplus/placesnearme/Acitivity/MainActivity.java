@@ -38,11 +38,20 @@ import com.itshareplus.placesnearme.Model.KeywordItem;
 import com.itshareplus.placesnearme.Model.MyLocation;
 import com.itshareplus.placesnearme.Model.Place;
 import com.itshareplus.placesnearme.Model.PlaceList;
+import com.itshareplus.placesnearme.Module.RequestToServer;
 import com.itshareplus.placesnearme.R;
 import com.itshareplus.placesnearme.Service.RegistrationIntentService;
+import com.loopj.android.http.JsonHttpResponseHandler;
+import com.loopj.android.http.RequestParams;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import cz.msebera.android.httpclient.Header;
 
 public class MainActivity extends FragmentActivity implements
         OnMapReadyCallback,
@@ -93,6 +102,8 @@ public class MainActivity extends FragmentActivity implements
         }
 
         initialize();
+
+
     }
 
     /**

@@ -31,7 +31,6 @@ import java.util.List;
 import com.github.clans.fab.FloatingActionButton;
 import com.itshareplus.placesnearme.Adapter.FBFeedItemAdapter;
 import com.itshareplus.placesnearme.Adapter.ImageGalleryAdapter;
-import com.itshareplus.placesnearme.Adapter.PlaceDetailsReviewAdapter;
 import com.itshareplus.placesnearme.GoogleMapWebService.GoogleMapsDirections;
 import com.itshareplus.placesnearme.GoogleMapWebService.GooglePlaceDetails;
 import com.itshareplus.placesnearme.GoogleMapWebService.GooglePlaceDetailsListener;
@@ -40,7 +39,8 @@ import com.itshareplus.placesnearme.Model.FBFeedItem;
 import com.itshareplus.placesnearme.Model.GlobalVars;
 import com.itshareplus.placesnearme.Model.Place;
 import com.itshareplus.placesnearme.Model.PlaceDetails;
-import com.itshareplus.placesnearme.Model.Review;
+import com.itshareplus.placesnearme.Module.QueryNewsFeed;
+import com.itshareplus.placesnearme.Module.QueryNewsFeedListener;
 import com.itshareplus.placesnearme.Module.RequestToServer;
 import com.itshareplus.placesnearme.R;
 import com.loopj.android.http.JsonHttpResponseHandler;
@@ -54,8 +54,7 @@ import cz.msebera.android.httpclient.Header;
 
 public class PlaceDetailActivity extends AppCompatActivity implements
         View.OnClickListener,
-        GooglePlaceDetailsListener
-{
+        GooglePlaceDetailsListener, QueryNewsFeedListener {
 
     final String TAG_LOG = this.getClass().getSimpleName();
     private static final int TAKE_PICTURE_AND_UPLOAD = 2000;
@@ -80,10 +79,10 @@ public class PlaceDetailActivity extends AppCompatActivity implements
     Place place;
 
     ProgressBar progressBarLoading;
-    ListView listViewReview;
+    ListView listViewNewsFeed;
 
     ImageGalleryAdapter adapterImageGallery;
-    FBFeedItemAdapter adapterReview;
+    FBFeedItemAdapter adapterNewsFeed;
 
     //Floating Action Buttons
     FloatingActionButton fabUploadPhoto;
@@ -95,13 +94,23 @@ public class PlaceDetailActivity extends AppCompatActivity implements
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_place_detail);
 
-        initialize();
+        init();
+    }
+    private void init() {
+        initComponents();
         place = GlobalVars.currentPlace;
         displayBasicPlaceInfo(place);
         new GooglePlaceDetails(this, place).execute();
+
+        //Load news feed
+        loadNewsFeed();
     }
 
-    private void initialize() {
+    private void loadNewsFeed() {
+        new QueryNewsFeed(this, place.mPlaceId).execute();
+    }
+
+    private void initComponents() {
         frameContact = (RelativeLayout) findViewById(R.id.frameContact);
         frameWebsite = (RelativeLayout) findViewById(R.id.frameWebsite);
         frameImageGallery = (HorizontalScrollView) findViewById(R.id.frameImageGallery);
@@ -144,10 +153,10 @@ public class PlaceDetailActivity extends AppCompatActivity implements
         adapterImageGallery = new ImageGalleryAdapter(this, linearLayoutImageGallery, images);
 
         //Facebook Feeds
-        listViewReview = (ListView) findViewById(R.id.listViewReview);
+        listViewNewsFeed = (ListView) findViewById(R.id.listViewReview);
         List<FBFeedItem> reviews = new ArrayList<>();
-        adapterReview = new FBFeedItemAdapter(this, R.layout.item_feed_fb, reviews);
-        listViewReview.setAdapter(adapterReview);
+        adapterNewsFeed = new FBFeedItemAdapter(this, R.layout.item_feed_fb, reviews);
+        listViewNewsFeed.setAdapter(adapterNewsFeed);
 
         //Floating Action Buttons
         fabUploadPhoto = (FloatingActionButton) findViewById(R.id.fabUploadPhoto);
@@ -156,6 +165,8 @@ public class PlaceDetailActivity extends AppCompatActivity implements
         fabCommentRating.setOnClickListener(this);
         fabAddToCalendar = (FloatingActionButton) findViewById(R.id.fabAddToCalendar);
         fabAddToCalendar.setOnClickListener(this);
+
+
     }
 
     private void displayBasicPlaceInfo(Place place) {
@@ -297,7 +308,7 @@ public class PlaceDetailActivity extends AppCompatActivity implements
             Log.d(TAG_LOG, "File not found!");
         }
 
-        RequestToServer.sendRequest(RequestToServer.Method.POST, params, new JsonHttpResponseHandler(){
+        RequestToServer.sendRequest("handler.php", RequestToServer.Method.POST, params, new JsonHttpResponseHandler(){
             @Override
             public void onSuccess(int statusCode, cz.msebera.android.httpclient.Header[] headers, JSONObject response) {
                 super.onSuccess(statusCode, headers, response);
@@ -326,7 +337,7 @@ public class PlaceDetailActivity extends AppCompatActivity implements
         RequestParams params = new RequestParams();
         params.put("cid", "query_photo");
         params.put("place_id", GlobalVars.currentPlace.mPlaceId);
-        RequestToServer.sendRequest(RequestToServer.Method.POST, params, new JsonHttpResponseHandler() {
+        RequestToServer.sendRequest("handler.php", RequestToServer.Method.POST, params, new JsonHttpResponseHandler() {
             @Override
             public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
                 super.onSuccess(statusCode, headers, response);
@@ -451,5 +462,20 @@ public class PlaceDetailActivity extends AppCompatActivity implements
             txtContact.setText(placeDetails.localPhoneNumber);
             txtInternationalContact.setText(placeDetails.internationalPhoneNumber);
         }
+    }
+
+    @Override
+    public void OnQueryNewsFeedStart() {
+
+    }
+
+    @Override
+    public void OnQueryNewsFeedSuccess(List<FBFeedItem> fbFeedItems) {
+        adapterNewsFeed.update(fbFeedItems);
+    }
+
+    @Override
+    public void OnQueryNewsFeedFailed(String error_message) {
+        Toast.makeText(this, error_message, Toast.LENGTH_SHORT).show();
     }
 }

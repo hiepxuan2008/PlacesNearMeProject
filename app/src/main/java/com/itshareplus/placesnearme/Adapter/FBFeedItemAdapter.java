@@ -58,13 +58,27 @@ public class FBFeedItemAdapter extends ArrayAdapter<FBFeedItem> {
             } else {
                 ivAvatar.setImageResource(R.drawable.no_avatar);
             }
+
+            ImageView ivPhoto = (ImageView) v.findViewById(R.id.resource_photo);
+            if (item.photos.size() > 0) {
+                Picasso.with(context).load(item.photos.get(0).url).into(ivPhoto);
+            } else {
+                ivPhoto.setVisibility(View.GONE);
+            }
+
+            TextView txtLikeCounter = (TextView) v.findViewById(R.id.txtLikeCounter);
+            txtLikeCounter.setText(item.likers.size() > 1 ? item.likers.size() + " Likes" : item.likers.size() + " Like");
+
+            TextView txtCommentCounter = (TextView) v.findViewById(R.id.txtCommentCounter);
+            txtCommentCounter.setText("0 Comments");
         }
 
         return v;
     }
 
-    public void setData(List<FBFeedItem> items) {
+    public void update(List<FBFeedItem> items) {
         this.items = items;
+        this.notifyDataSetChanged();
     }
     @Override
     public FBFeedItem getItem(int position) {
