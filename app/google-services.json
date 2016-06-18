@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "545468188364",
+    "firebase_url": "https://project-3597394455488390290.firebaseio.com",
+    "project_id": "project-3597394455488390290",
+    "storage_bucket": "project-3597394455488390290.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:545468188364:android:eb00d8c63bc86ca7",
+        "android_client_info": {
+          "package_name": "com.itshareplus.placesnearme"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "545468188364-kpvult55ols2fh5btn8antk6tlhtfv12.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.itshareplus.placesnearme",
+            "certificate_hash": "6AD38A044CD19A5047B73840870563C5F0FAB1D9"
+          }
+        },
+        {
+          "client_id": "545468188364-36d80j9p6mfiqkif5h6k90e5c2vvi25s.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDT30ra_67ND-HDXkKePfVbAKebLU57VK8"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "545468188364-36d80j9p6mfiqkif5h6k90e5c2vvi25s.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
