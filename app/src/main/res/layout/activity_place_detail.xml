@@ -284,7 +284,23 @@
             android:layout_height="wrap_content"
             android:src="@android:drawable/ic_menu_edit"
             fab:fab_size="mini"
-            fab:fab_label="Comment and Rating" />
+            fab:fab_label="Post your feeling" />
+
+        <com.github.clans.fab.FloatingActionButton
+            android:id="@+id/fabFilterByLike"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@android:drawable/ic_menu_sort_by_size"
+            fab:fab_size="mini"
+            fab:fab_label="Sort by Like" />
+
+        <com.github.clans.fab.FloatingActionButton
+            android:id="@+id/fabFilterByTimeLine"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@android:drawable/ic_menu_today"
+            fab:fab_size="mini"
+            fab:fab_label="Sort by TimeLine" />
 
     </com.github.clans.fab.FloatingActionMenu>
 

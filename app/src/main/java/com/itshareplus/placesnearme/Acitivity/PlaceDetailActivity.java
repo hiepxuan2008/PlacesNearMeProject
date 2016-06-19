@@ -1,6 +1,7 @@
 package com.itshareplus.placesnearme.Acitivity;
 
 import android.app.Activity;
+import android.content.ClipData;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Environment;
@@ -31,6 +32,9 @@ import java.util.List;
 import com.github.clans.fab.FloatingActionButton;
 import com.itshareplus.placesnearme.Adapter.FBFeedItemAdapter;
 import com.itshareplus.placesnearme.Adapter.ImageGalleryAdapter;
+import com.itshareplus.placesnearme.Architecture.FrameworkTemplate.FeedItemsManager;
+import com.itshareplus.placesnearme.Architecture.FrameworkTemplate.FilterHelperByLike;
+import com.itshareplus.placesnearme.Architecture.FrameworkTemplate.FilterHelperByTimeLine;
 import com.itshareplus.placesnearme.GoogleMapWebService.GoogleMapsDirections;
 import com.itshareplus.placesnearme.GoogleMapWebService.GooglePlaceDetails;
 import com.itshareplus.placesnearme.GoogleMapWebService.GooglePlaceDetailsListener;
@@ -39,6 +43,8 @@ import com.itshareplus.placesnearme.Model.FBFeedItem;
 import com.itshareplus.placesnearme.Model.GlobalVars;
 import com.itshareplus.placesnearme.Model.Place;
 import com.itshareplus.placesnearme.Model.PlaceDetails;
+import com.itshareplus.placesnearme.Module.FollowThisPlace;
+import com.itshareplus.placesnearme.Module.FollowThisPlaceListener;
 import com.itshareplus.placesnearme.Module.QueryNewsFeed;
 import com.itshareplus.placesnearme.Module.QueryNewsFeedListener;
 import com.itshareplus.placesnearme.Module.RequestToServer;
@@ -54,7 +60,7 @@ import cz.msebera.android.httpclient.Header;
 
 public class PlaceDetailActivity extends AppCompatActivity implements
         View.OnClickListener,
-        GooglePlaceDetailsListener, QueryNewsFeedListener {
+        GooglePlaceDetailsListener, QueryNewsFeedListener, FollowThisPlaceListener {
 
     final String TAG_LOG = this.getClass().getSimpleName();
     private static final int TAKE_PICTURE_AND_UPLOAD = 2000;
@@ -89,6 +95,13 @@ public class PlaceDetailActivity extends AppCompatActivity implements
     FloatingActionButton fabCommentRating;
     FloatingActionButton fabAddToCalendar;
 
+    FloatingActionButton fabFilterByLike;
+    FloatingActionButton fabFilterByTimeLine;
+
+    FeedItemsManager feedItemsManager = new FeedItemsManager(new ArrayList<FBFeedItem>());
+
+    int is_following = 0;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -104,6 +117,7 @@ public class PlaceDetailActivity extends AppCompatActivity implements
 
         //Load news feed
         loadNewsFeed();
+        checkFollowPlaceState();
     }
 
     private void loadNewsFeed() {
@@ -166,7 +180,10 @@ public class PlaceDetailActivity extends AppCompatActivity implements
         fabAddToCalendar = (FloatingActionButton) findViewById(R.id.fabAddToCalendar);
         fabAddToCalendar.setOnClickListener(this);
 
-
+        fabFilterByLike = (FloatingActionButton) findViewById(R.id.fabFilterByLike);
+        fabFilterByLike.setOnClickListener(this);
+        fabFilterByTimeLine = (FloatingActionButton) findViewById(R.id.fabFilterByTimeLine);
+        fabFilterByTimeLine.setOnClickListener(this);
     }
 
     private void displayBasicPlaceInfo(Place place) {
@@ -176,11 +193,45 @@ public class PlaceDetailActivity extends AppCompatActivity implements
         txtPlaceName.setText(place.mName);
         txtPlaceAddress.setText(place.mVicinity);
         txtDistance.setText(place.mLocation.distanceTo(GlobalVars.getUserLocation()));
-        if (FavoritePlacesManager.getInstance().IsExist(place)) {
-            btnFavorite.setImageResource(R.drawable.icon_fav_active);
-        } else {
-            btnFavorite.setImageResource(R.drawable.icon_fav_normal_stroke);
-        }
+
+//        if (FavoritePlacesManager.getInstance().IsExist(place)) {
+//            btnFavorite.setImageResource(R.drawable.icon_fav_active);
+//        } else {
+//            btnFavorite.setImageResource(R.drawable.icon_fav_normal_stroke);
+//        }
+    }
+
+    private void checkFollowPlaceState() {
+        RequestParams params = new RequestParams();
+        params.put("cid", "is_following_place");
+        params.put("user_id", GlobalVars.getUserId());
+        params.put("place_id", GlobalVars.currentPlace.mPlaceId);
+
+        RequestToServer.sendRequest("handler.php", RequestToServer.Method.POST, params, new JsonHttpResponseHandler() {
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
+                super.onSuccess(statusCode, headers, response);
+                try {
+                    int error = response.getInt("error");
+                    if (error == 1) {
+                        String error_message = response.getString("error_message");
+                        Toast.makeText(getApplicationContext(), error_message, Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    is_following = response.getInt("is_following");
+                    updateFollowingPlaceState();
+
+                } catch (Exception e) {
+                    Toast.makeText(getApplicationContext(), "checkFollowPlaceState::Parse JSON failed", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONObject errorResponse) {
+                super.onFailure(statusCode, headers, throwable, errorResponse);
+                Toast.makeText(getApplicationContext(), "Check following status failed!", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     @Override
@@ -218,18 +269,45 @@ public class PlaceDetailActivity extends AppCompatActivity implements
                 break;
             }
             case R.id.fabCommentRating: {
-                onCommentAndRating();
+                onPostStatus();
                 break;
             }
             case R.id.fabAddToCalendar: {
                 onAddToCalendar();
                 break;
             }
+            case R.id.fabFilterByLike: {
+                onFilterByLike();
+                break;
+            }
+            case R.id.fabFilterByTimeLine: {
+                onFilterByTimeLine();
+                break;
+            }
         }
     }
 
-    private void onCommentAndRating() {
-        Toast.makeText(this, "In developing!...", Toast.LENGTH_SHORT).show();
+    private void onFilterByTimeLine() {
+        feedItemsManager.Sort(new FilterHelperByTimeLine());
+        adapterNewsFeed.update(feedItemsManager.items);
+    }
+
+    private void onFilterByLike() {
+        feedItemsManager.Sort(new FilterHelperByLike());
+        adapterNewsFeed.update(feedItemsManager.items);
+    }
+
+    private void onPostStatus() {
+        Intent intent = new Intent(this, StatusActivity.class);
+        startActivity(intent);
+    }
+
+    private void updateFollowingPlaceState() {
+        if (is_following == 1) {
+            btnFavorite.setImageResource(R.drawable.icon_fav_active);
+        } else {
+            btnFavorite.setImageResource(R.drawable.icon_fav_normal_stroke);
+        }
     }
 
     private void onAddToCalendar() {
@@ -421,17 +499,26 @@ public class PlaceDetailActivity extends AppCompatActivity implements
     }
 
     private void addToFavorite() {
-        if (FavoritePlacesManager.getInstance().IsExist(GlobalVars.currentPlace)) {
-            if (FavoritePlacesManager.getInstance().RemoveThisPlace(GlobalVars.currentPlace)) {
-                btnFavorite.setImageResource(R.drawable.icon_fav_normal_stroke);
-                FavoritePlacesManager.getInstance().SaveData();
-            }
+        if (is_following == 1) {
+            //Toast.makeText(this, GlobalVars.getUserId(), Toast.LENGTH_SHORT).show();
+            new FollowThisPlace(this, GlobalVars.getUserId(), GlobalVars.currentPlace.mPlaceId, 0).execute();
         } else {
-            if (FavoritePlacesManager.getInstance().AddThisPlace(GlobalVars.currentPlace)) {
-                btnFavorite.setImageResource(R.drawable.icon_fav_active);
-                FavoritePlacesManager.getInstance().SaveData();
-            }
+            //Toast.makeText(this, GlobalVars.getUserId(), Toast.LENGTH_SHORT).show();
+            new FollowThisPlace(this, GlobalVars.getUserId(), GlobalVars.currentPlace.mPlaceId, 1).execute();
         }
+
+
+//        if (FavoritePlacesManager.getInstance().IsExist(GlobalVars.currentPlace)) {
+//            if (FavoritePlacesManager.getInstance().RemoveThisPlace(GlobalVars.currentPlace)) {
+//                btnFavorite.setImageResource(R.drawable.icon_fav_normal_stroke);
+//                FavoritePlacesManager.getInstance().SaveData();
+//            }
+//        } else {
+//            if (FavoritePlacesManager.getInstance().AddThisPlace(GlobalVars.currentPlace)) {
+//                btnFavorite.setImageResource(R.drawable.icon_fav_active);
+//                FavoritePlacesManager.getInstance().SaveData();
+//            }
+//        }
     }
 
     @Override
@@ -471,11 +558,34 @@ public class PlaceDetailActivity extends AppCompatActivity implements
 
     @Override
     public void OnQueryNewsFeedSuccess(List<FBFeedItem> fbFeedItems) {
-        adapterNewsFeed.update(fbFeedItems);
+        feedItemsManager.items = fbFeedItems;
+        onFilterByTimeLine();
     }
 
     @Override
     public void OnQueryNewsFeedFailed(String error_message) {
+        Toast.makeText(this, error_message, Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        loadNewsFeed();
+    }
+
+    @Override
+    public void OnFollowThisPlaceStart() {
+
+    }
+
+    @Override
+    public void OnFollowThisPlaceSuccess(int type) {
+        is_following = type;
+        updateFollowingPlaceState();
+    }
+
+    @Override
+    public void OnFollowThisPlaceFailed(String error_message) {
         Toast.makeText(this, error_message, Toast.LENGTH_SHORT).show();
     }
 }

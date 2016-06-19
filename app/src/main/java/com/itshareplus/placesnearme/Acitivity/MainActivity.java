@@ -38,20 +38,12 @@ import com.itshareplus.placesnearme.Model.KeywordItem;
 import com.itshareplus.placesnearme.Model.MyLocation;
 import com.itshareplus.placesnearme.Model.Place;
 import com.itshareplus.placesnearme.Model.PlaceList;
-import com.itshareplus.placesnearme.Module.RequestToServer;
+import com.itshareplus.placesnearme.Module.PlayerPrefs;
 import com.itshareplus.placesnearme.R;
 import com.itshareplus.placesnearme.Service.RegistrationIntentService;
-import com.loopj.android.http.JsonHttpResponseHandler;
-import com.loopj.android.http.RequestParams;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import cz.msebera.android.httpclient.Header;
 
 public class MainActivity extends FragmentActivity implements
         OnMapReadyCallback,
@@ -90,6 +82,7 @@ public class MainActivity extends FragmentActivity implements
     //Buttons
     private ImageView btnSetting;
     private ImageView btnMyLocation;
+    private ImageView btnLogin;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -128,6 +121,8 @@ public class MainActivity extends FragmentActivity implements
     }
 
     private void initialize() {
+        PlayerPrefs.Initialize(getApplicationContext());
+
         initMap();
         initComponents();
         initGPS();
@@ -181,9 +176,15 @@ public class MainActivity extends FragmentActivity implements
         btnSetting = (ImageView) findViewById(R.id.btnSetting);
         btnSetting.setOnClickListener(this);
 
+        //Login Button
+        btnLogin = (ImageView) findViewById(R.id.btnLogin);
+        btnLogin.setOnClickListener(this);
+
         //My Location Button
         btnMyLocation = (ImageView) findViewById(R.id.btnMyLocation);
         btnMyLocation.setOnClickListener(this);
+
+
     }
 
     private void initMap() {
@@ -339,6 +340,16 @@ public class MainActivity extends FragmentActivity implements
                 startActivity(intent);
                 break;
             }
+            case R.id.btnLogin: {
+                if (GlobalVars.getUserId() == 0) {
+                    Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+                    startActivity(intent);
+                } else {
+                    GlobalVars.setUserId(0);
+                    btnLogin.setImageResource(R.drawable.btn_login);
+                }
+                break;
+            }
             case R.id.btnMyLocation: {
                 refreshUserLocation();
                 Toast.makeText(this, "Move camera to your location done!", Toast.LENGTH_SHORT).show();
@@ -349,8 +360,12 @@ public class MainActivity extends FragmentActivity implements
 
     @Override
     protected void onResume() {
+        super.onResume();
         if (mMap != null)
             refreshUserLocation();
-        super.onResume();
+
+        if (GlobalVars.getUserId() != 0) {
+            btnLogin.setImageResource(R.drawable.btn_logout);
+        }
     }
 }

@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/PlacesNearMe.iml" filepath="$PROJECT_DIR$/PlacesNearMe.iml" />
+      <module fileurl="file://$PROJECT_DIR$/PlacesNearMeProject.iml" filepath="$PROJECT_DIR$/PlacesNearMeProject.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
     </modules>
   </component>

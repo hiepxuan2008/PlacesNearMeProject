@@ -1,6 +1,9 @@
 package com.itshareplus.placesnearme.Model;
 
+import com.google.android.gms.games.PlayerRef;
+import com.google.android.gms.games.stats.PlayerStatsRef;
 import com.google.android.gms.maps.model.Marker;
+import com.itshareplus.placesnearme.Module.PlayerPrefs;
 
 import java.util.HashMap;
 import java.util.List;
@@ -30,5 +33,22 @@ public class GlobalVars {
         } else {
             return location;
         }
+    }
+
+    //Ha hoi phan giai sau -> Sau nay se dung session de luu thong tin dang nhap cua nguoi dung
+    public static int getUserId() {
+        return PlayerPrefs.getInstance().GetInt("user_id");
+    }
+
+    public static void setUserId(int userId) {
+        PlayerPrefs.getInstance().SetInt("user_id", userId);
+    }
+
+    public static String getAvatar() {
+        return PlayerPrefs.getInstance().GetString("avatar");
+    }
+
+    public static void setAvatar(String avatar) {
+        PlayerPrefs.getInstance().SetString("avatar", avatar);
     }
 }

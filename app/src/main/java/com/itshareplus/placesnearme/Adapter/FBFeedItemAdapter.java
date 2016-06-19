@@ -7,6 +7,7 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.RatingBar;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.itshareplus.placesnearme.Model.FBFeedItem;
@@ -71,6 +72,16 @@ public class FBFeedItemAdapter extends ArrayAdapter<FBFeedItem> {
 
             TextView txtCommentCounter = (TextView) v.findViewById(R.id.txtCommentCounter);
             txtCommentCounter.setText("0 Comments");
+
+
+            final RelativeLayout btnLike = (RelativeLayout)v.findViewById(R.id.btnLike);
+            btnLike.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    ImageView iconLike = (ImageView) v.findViewById(R.id.iconLike);
+                    iconLike.setImageResource(R.drawable.cj6);
+                }
+            });
         }
 
         return v;
