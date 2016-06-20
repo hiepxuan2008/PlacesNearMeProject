@@ -11,7 +11,7 @@ public class GooglePlaceImporter extends PlaceImporter {
         Place info =(Place)input;
         PlaceInfo result = new PlaceInfo();
         result.googlePlaceId = info.mPlaceId;
-        result.placeId = 0;
+        result.placeId = -1;
         result.name = info.mName;
         result.address = info.mVicinity;
         result.website = info.mPlaceDetails != null ? info.mPlaceDetails.website : null;

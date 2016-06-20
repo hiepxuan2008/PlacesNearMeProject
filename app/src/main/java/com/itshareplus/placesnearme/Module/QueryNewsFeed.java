@@ -53,9 +53,16 @@ public class QueryNewsFeed {
         List<FBFeedItem> fbFeedItems = new ArrayList<>();
 
         try {
+            int error = response.getInt("error");
+            if (error == 1) {
+                String error_message = response.getString("error_message");
+                listener.OnQueryNewsFeedFailed(error_message);
+                return;
+            }
+
             JSONArray results = response.getJSONArray("results");
             for (int i = 0; i < results.length(); i++) {
-                FBFeedItem item =new FBFeedItem();
+                FBFeedItem item = new FBFeedItem();
 
                 JSONObject post = results.getJSONObject(i);
                 item.postId = post.getInt("post_id");
@@ -63,7 +70,7 @@ public class QueryNewsFeed {
                 item.name = post.getString("full_name");
                 item.placeId = post.getInt("place_id");
                 item.status = post.getString("status");
-                item.time = post.getLong("created_at");
+                item.time = post.getLong("created_at") - 7 * 3600;
                 item.edited_at = post.getLong("modified_at");
                 item.avatarURL = post.getString("avatar");
 
@@ -91,7 +98,7 @@ public class QueryNewsFeed {
             }
 
         } catch (JSONException e) {
-            listener.OnQueryNewsFeedFailed("Parse JSON Error!");
+            listener.OnQueryNewsFeedFailed("QueryNewFeed::Parse JSON Error!");
         }
         listener.OnQueryNewsFeedSuccess(fbFeedItems);
     }

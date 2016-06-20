@@ -1,5 +1,8 @@
 package com.itshareplus.placesnearme.Architecture.Importer;
 
+import com.google.android.gms.maps.model.LatLng;
+import com.itshareplus.placesnearme.Model.MyLocation;
+
 /**
  * Created by Mai Thanh Hiep on 6/19/2016.
  */
@@ -28,5 +31,18 @@ public class PlaceInfo {
         this.website = website;
         this.phoneNumber = phoneNumber;
         this.internationalPhoneNumber = internationalPhoneNumber;
+    }
+
+    public String getStandardPlaceId() {
+        if (placeId <= 0)
+            return googlePlaceId;
+        return String.valueOf(placeId);
+    }
+
+    public LatLng toLatLng() {
+        return new LatLng(lat, lng);
+    }
+    public MyLocation toMyLocation() {
+        return new MyLocation(lat, lng);
     }
 }

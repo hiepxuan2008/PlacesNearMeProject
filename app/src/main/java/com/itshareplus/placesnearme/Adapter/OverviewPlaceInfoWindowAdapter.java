@@ -7,6 +7,7 @@ import android.widget.TextView;
 
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.Marker;
+import com.itshareplus.placesnearme.Architecture.Importer.PlaceInfo;
 import com.itshareplus.placesnearme.R;
 
 import com.itshareplus.placesnearme.Model.GlobalVars;
@@ -28,7 +29,7 @@ public class OverviewPlaceInfoWindowAdapter implements GoogleMap.InfoWindowAdapt
         if (v == null)
             return null;
 
-        Place place = GlobalVars.markerData.get(marker);
+        PlaceInfo place = GlobalVars.markerData.get(marker);
         if (place == null)
             return null;
 
@@ -37,13 +38,13 @@ public class OverviewPlaceInfoWindowAdapter implements GoogleMap.InfoWindowAdapt
         TextView txtRating = (TextView) v.findViewById(R.id.txtRating);
         TextView txtDistance = (TextView) v.findViewById(R.id.txtDistance);
 
-        txtPlaceName.setText(place.mName);
-        txtPlaceAddress.setText(place.mVicinity);
-        txtDistance.setText(place.mLocation.distanceTo(GlobalVars.location));
+        txtPlaceName.setText(place.name);
+        txtPlaceAddress.setText(place.address);
+        txtDistance.setText(place.toMyLocation().distanceTo(GlobalVars.location));
 
-        if (place.mRating != null) {
+        if (!place.rating.isEmpty()) {
             txtRating.setVisibility(View.VISIBLE);
-            txtRating.setText("Rating " + place.mRating);
+            txtRating.setText("Rating " + place.rating);
         } else {
             txtRating.setVisibility(View.GONE);
         }

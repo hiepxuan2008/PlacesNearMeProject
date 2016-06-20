@@ -8,6 +8,8 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.itshareplus.placesnearme.Architecture.Importer.PlaceInfo;
+import com.itshareplus.placesnearme.Model.MyLocation;
 import com.itshareplus.placesnearme.R;
 
 import java.util.List;
@@ -18,12 +20,12 @@ import com.itshareplus.placesnearme.Model.Place;
 /**
  * Created by Mai Thanh Hiep on 4/25/2016.
  */
-public class PlacesAdapter extends ArrayAdapter<Place> {
+public class PlacesAdapter extends ArrayAdapter<PlaceInfo> {
     Context context;
-    List<Place> places;
+    List<PlaceInfo> places;
     int resource;
 
-    public PlacesAdapter(Context context, int resource, List<Place> objects) {
+    public PlacesAdapter(Context context, int resource, List<PlaceInfo> objects) {
         super(context, resource, objects);
         this.context = context;
         this.places = objects;
@@ -36,7 +38,7 @@ public class PlacesAdapter extends ArrayAdapter<Place> {
     }
 
     @Override
-    public Place getItem(int position) {
+    public PlaceInfo getItem(int position) {
         return places.get(position);
     }
 
@@ -47,7 +49,7 @@ public class PlacesAdapter extends ArrayAdapter<Place> {
             v = LayoutInflater.from(context).inflate(resource, null);
         }
 
-        Place place = getItem(position);
+        PlaceInfo place = getItem(position);
         if (place != null) {
             ImageView imageViewIcon = (ImageView)v.findViewById(R.id.ivIcon);
             TextView txtPlaceName = (TextView)v.findViewById(R.id.txtPlaceName);
@@ -55,14 +57,14 @@ public class PlacesAdapter extends ArrayAdapter<Place> {
             TextView txtPlaceAddress = (TextView) v.findViewById(R.id.txtPlaceAddress);
 
             imageViewIcon.setImageResource(GlobalVars.keywordItem.icon);
-            txtPlaceName.setText(place.mName);
-            txtPlaceAddress.setText(place.mVicinity);
-            txtDistance.setText(place.mLocation.distanceTo(GlobalVars.location));
+            txtPlaceName.setText(place.name);
+            txtPlaceAddress.setText(place.address);
+            txtDistance.setText(new MyLocation(place.lat, place.lat).distanceTo(GlobalVars.location));
         }
         return v;
     }
 
-    public void updateData(List<Place> places) {
+    public void updateData(List<PlaceInfo> places) {
         this.places = places;
         this.notifyDataSetChanged();
     }

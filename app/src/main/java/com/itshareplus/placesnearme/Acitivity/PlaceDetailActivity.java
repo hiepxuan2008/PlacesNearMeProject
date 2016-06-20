@@ -35,12 +35,16 @@ import com.itshareplus.placesnearme.Adapter.ImageGalleryAdapter;
 import com.itshareplus.placesnearme.Architecture.FrameworkTemplate.FeedItemsManager;
 import com.itshareplus.placesnearme.Architecture.FrameworkTemplate.FilterHelperByLike;
 import com.itshareplus.placesnearme.Architecture.FrameworkTemplate.FilterHelperByTimeLine;
+import com.itshareplus.placesnearme.Architecture.Importer.PlaceInfo;
 import com.itshareplus.placesnearme.GoogleMapWebService.GoogleMapsDirections;
 import com.itshareplus.placesnearme.GoogleMapWebService.GooglePlaceDetails;
 import com.itshareplus.placesnearme.GoogleMapWebService.GooglePlaceDetailsListener;
+import com.itshareplus.placesnearme.GoogleMapWebService.GooglePlaceDetailsSimple;
+import com.itshareplus.placesnearme.GoogleMapWebService.GooglePlaceDetailsSimpleListener;
 import com.itshareplus.placesnearme.Manager.FavoritePlacesManager;
 import com.itshareplus.placesnearme.Model.FBFeedItem;
 import com.itshareplus.placesnearme.Model.GlobalVars;
+import com.itshareplus.placesnearme.Model.MyLocation;
 import com.itshareplus.placesnearme.Model.Place;
 import com.itshareplus.placesnearme.Model.PlaceDetails;
 import com.itshareplus.placesnearme.Module.FollowThisPlace;
@@ -60,7 +64,7 @@ import cz.msebera.android.httpclient.Header;
 
 public class PlaceDetailActivity extends AppCompatActivity implements
         View.OnClickListener,
-        GooglePlaceDetailsListener, QueryNewsFeedListener, FollowThisPlaceListener {
+        QueryNewsFeedListener, FollowThisPlaceListener, GooglePlaceDetailsSimpleListener {
 
     final String TAG_LOG = this.getClass().getSimpleName();
     private static final int TAKE_PICTURE_AND_UPLOAD = 2000;
@@ -82,7 +86,7 @@ public class PlaceDetailActivity extends AppCompatActivity implements
     RelativeLayout frameContact;
     RelativeLayout frameWebsite;
     HorizontalScrollView frameImageGallery;
-    Place place;
+    PlaceInfo place;
 
     ProgressBar progressBarLoading;
     ListView listViewNewsFeed;
@@ -112,8 +116,11 @@ public class PlaceDetailActivity extends AppCompatActivity implements
     private void init() {
         initComponents();
         place = GlobalVars.currentPlace;
-        displayBasicPlaceInfo(place);
-        new GooglePlaceDetails(this, place).execute();
+        displayPlaceInfo(place);
+
+        if (!place.googlePlaceId.isEmpty()) {
+            new GooglePlaceDetailsSimple(this, place).execute();
+        }
 
         //Load news feed
         loadNewsFeed();
@@ -121,7 +128,7 @@ public class PlaceDetailActivity extends AppCompatActivity implements
     }
 
     private void loadNewsFeed() {
-        new QueryNewsFeed(this, place.mPlaceId).execute();
+        new QueryNewsFeed(this, place.getStandardPlaceId()).execute();
     }
 
     private void initComponents() {
@@ -159,7 +166,7 @@ public class PlaceDetailActivity extends AppCompatActivity implements
         txtInternationalContact.setOnClickListener(this);
 
         progressBarLoading = (ProgressBar) findViewById(R.id.progressBarLoading);
-        progressBarLoading.setVisibility(View.VISIBLE);
+        progressBarLoading.setVisibility(View.GONE);
 
         //Photos
         LinearLayout linearLayoutImageGallery = (LinearLayout) findViewById(R.id.llImageGallery);
@@ -186,13 +193,13 @@ public class PlaceDetailActivity extends AppCompatActivity implements
         fabFilterByTimeLine.setOnClickListener(this);
     }
 
-    private void displayBasicPlaceInfo(Place place) {
+    private void displayBasicPlaceInfo(PlaceInfo place) {
         if (place == null)
             return;
 
-        txtPlaceName.setText(place.mName);
-        txtPlaceAddress.setText(place.mVicinity);
-        txtDistance.setText(place.mLocation.distanceTo(GlobalVars.getUserLocation()));
+        txtPlaceName.setText(place.name);
+        txtPlaceAddress.setText(place.address);
+        txtDistance.setText(new MyLocation(place.lat, place.lng).distanceTo(GlobalVars.getUserLocation()));
 
 //        if (FavoritePlacesManager.getInstance().IsExist(place)) {
 //            btnFavorite.setImageResource(R.drawable.icon_fav_active);
@@ -201,11 +208,33 @@ public class PlaceDetailActivity extends AppCompatActivity implements
 //        }
     }
 
+    private void displayPlaceInfo(PlaceInfo place) {
+        if (place == null)
+            return;
+
+        displayBasicPlaceInfo(place);
+
+        //Place Address
+        txtPlaceAddress.setText(place.address);
+        //Website
+        if (place.website != null && !place.website.isEmpty()) {
+            frameWebsite.setVisibility(View.VISIBLE);
+            txtWebsite.setText(place.website);
+        }
+
+        //Contact
+        if (place.phoneNumber != null && !place.phoneNumber.isEmpty() || place.internationalPhoneNumber != null && !place.internationalPhoneNumber.isEmpty()) {
+            frameContact.setVisibility(View.VISIBLE);
+            txtContact.setText(place.phoneNumber);
+            txtInternationalContact.setText(place.internationalPhoneNumber);
+        }
+    }
+
     private void checkFollowPlaceState() {
         RequestParams params = new RequestParams();
         params.put("cid", "is_following_place");
         params.put("user_id", GlobalVars.getUserId());
-        params.put("place_id", GlobalVars.currentPlace.mPlaceId);
+        params.put("place_id", GlobalVars.currentPlace.getStandardPlaceId());
 
         RequestToServer.sendRequest("handler.php", RequestToServer.Method.POST, params, new JsonHttpResponseHandler() {
             @Override
@@ -316,15 +345,15 @@ public class PlaceDetailActivity extends AppCompatActivity implements
         intent.setType("vnd.android.cursor.item/event");
         intent.putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, cal.getTimeInMillis());
         intent.putExtra(CalendarContract.EXTRA_EVENT_ALL_DAY, true);
-        intent.putExtra(CalendarContract.Events.EVENT_LOCATION, place.mPlaceDetails.formattedAddress);
+        intent.putExtra(CalendarContract.Events.EVENT_LOCATION, place.address);
         intent.putExtra(CalendarContract.EXTRA_EVENT_END_TIME, cal.getTimeInMillis()+60*60*1000); //1 hour later
-        intent.putExtra(CalendarContract.Events.TITLE, "Event going to \"" + GlobalVars.currentPlace.mName + "\"");
+        intent.putExtra(CalendarContract.Events.TITLE, "Event going to \"" + GlobalVars.currentPlace.name + "\"");
         intent.putExtra(CalendarContract.Events.DESCRIPTION,
                 String.format("Maps: %s\nPhone: %s - %s\nWebsite: %s",
-                String.format("http://maps.google.com/maps?q=loc:%f,%f8&z=20", place.mLocation.latitude, place.mLocation.longitude),
-                place.mPlaceDetails.localPhoneNumber,
-                place.mPlaceDetails.internationalPhoneNumber,
-                place.mPlaceDetails.website
+                String.format("http://maps.google.com/maps?q=loc:%f,%f8&z=20", place.lat, place.lng),
+                place.phoneNumber,
+                place.internationalPhoneNumber,
+                place.website
         ));
         startActivity(intent);
     }
@@ -377,7 +406,7 @@ public class PlaceDetailActivity extends AppCompatActivity implements
     private void uploadPhotoToServer() {
         RequestParams params = new RequestParams();
         params.put("cid", "upload_photo");
-        params.put("place_id", GlobalVars.currentPlace.mPlaceId);
+        params.put("place_id", GlobalVars.currentPlace.getStandardPlaceId());
         File file = new File(GlobalVars.currentPhotoPath);
         try {
             params.put("upload_file", file);
@@ -414,7 +443,7 @@ public class PlaceDetailActivity extends AppCompatActivity implements
     private void reloadPhotoGallery() {
         RequestParams params = new RequestParams();
         params.put("cid", "query_photo");
-        params.put("place_id", GlobalVars.currentPlace.mPlaceId);
+        params.put("place_id", GlobalVars.currentPlace.getStandardPlaceId());
         RequestToServer.sendRequest("handler.php", RequestToServer.Method.POST, params, new JsonHttpResponseHandler() {
             @Override
             public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
@@ -490,9 +519,9 @@ public class PlaceDetailActivity extends AppCompatActivity implements
         Intent sharingIntent = new Intent(Intent.ACTION_SEND);
         sharingIntent.setType("text/plain");
         String shareTitle = "PlacesNearMe - Sharing a place";
-        String shareBody = place.mName + "\r\n" +
-                place.mVicinity + "\r\n" +
-                String.format("http://maps.google.com/maps?q=loc:%f,%f8&z=20", place.mLocation.latitude, place.mLocation.longitude);
+        String shareBody = place.name + "\r\n" +
+                place.address + "\r\n" +
+                String.format("http://maps.google.com/maps?q=loc:%f,%f8&z=20", place.lat, place.lng);
         sharingIntent.putExtra(Intent.EXTRA_SUBJECT, shareTitle);
         sharingIntent.putExtra(Intent.EXTRA_TEXT, shareBody);
         startActivity(Intent.createChooser(sharingIntent, "Share via"));
@@ -501,10 +530,10 @@ public class PlaceDetailActivity extends AppCompatActivity implements
     private void addToFavorite() {
         if (is_following == 1) {
             //Toast.makeText(this, GlobalVars.getUserId(), Toast.LENGTH_SHORT).show();
-            new FollowThisPlace(this, GlobalVars.getUserId(), GlobalVars.currentPlace.mPlaceId, 0).execute();
+            new FollowThisPlace(this, GlobalVars.getUserId(), GlobalVars.currentPlace.getStandardPlaceId(), 0).execute();
         } else {
             //Toast.makeText(this, GlobalVars.getUserId(), Toast.LENGTH_SHORT).show();
-            new FollowThisPlace(this, GlobalVars.getUserId(), GlobalVars.currentPlace.mPlaceId, 1).execute();
+            new FollowThisPlace(this, GlobalVars.getUserId(), GlobalVars.currentPlace.getStandardPlaceId(), 1).execute();
         }
 
 
@@ -519,36 +548,6 @@ public class PlaceDetailActivity extends AppCompatActivity implements
 //                FavoritePlacesManager.getInstance().SaveData();
 //            }
 //        }
-    }
-
-    @Override
-    public void onGooglePlaceDetailsStart() {
-
-    }
-
-    @Override
-    public void onGooglePlaceDetailsSuccess(Place place) {
-        progressBarLoading.setVisibility(View.GONE);
-
-        if (place == null || place.mPlaceDetails == null)
-            return;
-
-        //
-        PlaceDetails placeDetails = place.mPlaceDetails;
-        //Place Address
-        txtPlaceAddress.setText(placeDetails.formattedAddress);
-        //Website
-        if (placeDetails.website != null) {
-            frameWebsite.setVisibility(View.VISIBLE);
-            txtWebsite.setText(placeDetails.website);
-        }
-
-        //Contact
-        if (placeDetails.localPhoneNumber != null || placeDetails.internationalPhoneNumber != null) {
-            frameContact.setVisibility(View.VISIBLE);
-            txtContact.setText(placeDetails.localPhoneNumber);
-            txtInternationalContact.setText(placeDetails.internationalPhoneNumber);
-        }
     }
 
     @Override
@@ -587,5 +586,24 @@ public class PlaceDetailActivity extends AppCompatActivity implements
     @Override
     public void OnFollowThisPlaceFailed(String error_message) {
         Toast.makeText(this, error_message, Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void onGooglePlaceDetailsSimpleStart() {
+
+    }
+
+    @Override
+    public void onGooglePlaceDetailsSimpleFailed() {
+
+    }
+
+    @Override
+    public void onGooglePlaceDetailsSimpleSuccess(PlaceInfo place) {
+        //progressBarLoading.setVisibility(View.GONE);
+        if (place == null)
+            return;
+
+        displayPlaceInfo(place);
     }
 }

@@ -63,9 +63,9 @@ public class PlaceDirectionActivity extends FragmentActivity implements
         mode = intent.getStringExtra("mode");
         changeStyleByMode();
 
-        //Get direction
-        new GoogleMapsDirections(this, GlobalVars.getUserLocation(), GlobalVars.currentPlace.mPlaceId, mode)
-                .execute();
+        //Get direction -> Tim duong di theo toa do -> Thay vi placeID
+//        new GoogleMapsDirections(this, GlobalVars.getUserLocation(), GlobalVars.currentPlace.mPlaceId, mode)
+//                .execute();
     }
 
     private void changeStyleByMode() {
@@ -132,12 +132,12 @@ public class PlaceDirectionActivity extends FragmentActivity implements
 
     private void displayDirectionOnMap(List<Route> routes, int idxRoute) {
         removeOldStuff();
-        txtCurrentLocationToDestination.setText("Current Location to " + GlobalVars.currentPlace.mName);
+        txtCurrentLocationToDestination.setText("Current Location to " + GlobalVars.currentPlace.name);
 
         if (routes == null || routes.size() == 0) {
             markers.add(mMap.addMarker(new MarkerOptions().position(GlobalVars.getUserLocation().toLatLng()).title("My current location")));
-            markers.add(mMap.addMarker(new MarkerOptions().position(GlobalVars.currentPlace.mLocation.toLatLng()).title(GlobalVars.currentPlace.mName)));
-            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(GlobalVars.currentPlace.mLocation.toLatLng(), 15));
+            markers.add(mMap.addMarker(new MarkerOptions().position(new LatLng(GlobalVars.currentPlace.lat, GlobalVars.currentPlace.lng)).title(GlobalVars.currentPlace.name)));
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(GlobalVars.currentPlace.lat, GlobalVars.currentPlace.lng), 15));
             return;
         }
 
@@ -179,7 +179,7 @@ public class PlaceDirectionActivity extends FragmentActivity implements
 
         markers.add(mMap.addMarker(new MarkerOptions().position(startLocation).title(startAddress)));
         markers.add(mMap.addMarker(new MarkerOptions().position(endLocation).title(endAddress)));
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(GlobalVars.currentPlace.mLocation.toLatLng(), 15));
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(GlobalVars.currentPlace.toLatLng(), 15));
     }
 
     private void removeOldStuff() {

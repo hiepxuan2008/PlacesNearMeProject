@@ -27,6 +27,10 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.itshareplus.placesnearme.Adapter.KeywordsAdapter;
 import com.itshareplus.placesnearme.Adapter.OverviewPlaceInfoWindowAdapter;
 import com.itshareplus.placesnearme.Adapter.PlacesAdapter;
+import com.itshareplus.placesnearme.Architecture.Importer.GooglePlaceImporter;
+import com.itshareplus.placesnearme.Architecture.Importer.MyServerPlaceImporter;
+import com.itshareplus.placesnearme.Architecture.Importer.MyServerPlaceInfo;
+import com.itshareplus.placesnearme.Architecture.Importer.PlaceInfo;
 import com.itshareplus.placesnearme.GPS.GPSTracker;
 import com.itshareplus.placesnearme.GPS.GPSTrackerListener;
 import com.itshareplus.placesnearme.GoogleMapWebService.GooglePlaceSearchNearBySearch;
@@ -40,6 +44,8 @@ import com.itshareplus.placesnearme.Model.Place;
 import com.itshareplus.placesnearme.Model.PlaceList;
 import com.itshareplus.placesnearme.Module.PlayerPrefs;
 import com.itshareplus.placesnearme.R;
+import com.itshareplus.placesnearme.Server.MyServerNearBySearch;
+import com.itshareplus.placesnearme.Server.MyServerNearBySearchListener;
 import com.itshareplus.placesnearme.Service.RegistrationIntentService;
 
 import java.util.ArrayList;
@@ -51,7 +57,7 @@ public class MainActivity extends FragmentActivity implements
         GPSTrackerListener,
         GoogleMap.OnMarkerClickListener,
         GoogleMap.OnInfoWindowClickListener,
-        AdapterView.OnItemClickListener, View.OnClickListener {
+        AdapterView.OnItemClickListener, View.OnClickListener, MyServerNearBySearchListener {
 
     private static final int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
     String TAG = MainActivity.class.getName();
@@ -84,6 +90,8 @@ public class MainActivity extends FragmentActivity implements
     private ImageView btnMyLocation;
     private ImageView btnLogin;
 
+    boolean isGoogleDone = false, isMyServerDone = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -95,8 +103,6 @@ public class MainActivity extends FragmentActivity implements
         }
 
         initialize();
-
-
     }
 
     /**
@@ -156,7 +162,7 @@ public class MainActivity extends FragmentActivity implements
         btnOpenKeywordDrawer.setOnClickListener(this);
 
         //Search Places Navigation Drawer
-        List<Place> places = new ArrayList<>();
+        List<PlaceInfo> places = new ArrayList<>();
         adapterPlace = new PlacesAdapter(this, R.layout.item_place_overview, places);
         lvPlaces = (ListView) findViewById(R.id.lvPlaces);
         lvPlaces.setAdapter(adapterPlace);
@@ -220,23 +226,22 @@ public class MainActivity extends FragmentActivity implements
 
     @Override
     public void onGooglePlaceSearchStart() {
-        progressDialog = ProgressDialog.show(this, "", "Finding " + GlobalVars.keywordItem.text + "...");
 
-        for (Marker maker : markers) {
-            maker.remove();
-        }
     }
 
     @Override
     public void onGooglePlaceSearchSuccess(PlaceList placeList) {
-        List<Place> places = placeList.places;
-        GlobalVars.currentPlaceList = placeList;
+        isGoogleDone = true;
 
+        List<Place> places = placeList.places;
+
+        GooglePlaceImporter googlePlaceImporter = new GooglePlaceImporter();
         //Display on Google maps
         for (int i = 0; i < places.size(); ++i) {
-            Place place = places.get(i);
-            LatLng position = new LatLng(place.mLocation.latitude, place.mLocation.longitude);
+            PlaceInfo place = googlePlaceImporter.Convert(places.get(i));
+            GlobalVars.currentPlaceList.add(place);
 
+            LatLng position = new LatLng(place.lat, place.lng);
             Marker marker = mMap.addMarker(new MarkerOptions()
                     .position(position)
                     .icon(BitmapDescriptorFactory.fromResource(GlobalVars.keywordItem.icon)));
@@ -249,11 +254,12 @@ public class MainActivity extends FragmentActivity implements
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(centerPosition, 15));
 
         //Display on list view
-        adapterPlace.updateData(places);
+        adapterPlace.updateData(GlobalVars.currentPlaceList);
         btnOpenPlaceDrawer.setVisibility(View.VISIBLE);
 
         //Done
-        progressDialog.dismiss();
+        if (isGoogleDone && isMyServerDone)
+            progressDialog.dismiss();
     }
 
     private LatLng getCenterLocation(List<Place> places) {
@@ -285,7 +291,7 @@ public class MainActivity extends FragmentActivity implements
 
     @Override
     public void onInfoWindowClick(Marker marker) {
-        Place place = GlobalVars.markerData.get(marker);
+        PlaceInfo place = GlobalVars.markerData.get(marker);
 //        Toast.makeText(this, place.mName,
 //                Toast.LENGTH_SHORT).show();
 
@@ -304,17 +310,29 @@ public class MainActivity extends FragmentActivity implements
         drawerLayout.closeDrawers();
         if (GlobalVars.drawer == GlobalVars.DrawerType.KEYWORDS) {
             KeywordItem item = GlobalVars.keywordItem = adapterKeyword.getItem(position);
+
+            //Reset all
+            progressDialog = ProgressDialog.show(this, "", "Finding " + GlobalVars.keywordItem.text + "...");
+            for (Marker maker : markers) {
+                maker.remove();
+            }
+
+            isMyServerDone = isGoogleDone = false;
+            //Reset common place list and request for new places
+            GlobalVars.currentPlaceList = new ArrayList<>();
             new GooglePlaceSearchNearBySearch(this, GlobalVars.getUserLocation(), item.text).execute();
+            new MyServerNearBySearch(this, GlobalVars.getUserLocation().latitude, GlobalVars.getUserLocation().longitude, item.text).execute();
+
         } else if (GlobalVars.drawer == GlobalVars.DrawerType.SEARCH_PLACES){
-            Place place = adapterPlace.getItem(position);
+            PlaceInfo place = adapterPlace.getItem(position);
             GlobalVars.currentPlace = place;
             Intent intent = new Intent(MainActivity.this, PlaceDetailActivity.class);
             startActivity(intent);
         } else if (GlobalVars.drawer == GlobalVars.DrawerType.FAVORITE_PLACES) {
-            Place place = FavoritePlacesManager.getInstance().places.get(position);
-            GlobalVars.currentPlace = place;
-            Intent intent = new Intent(MainActivity.this, PlaceDetailActivity.class);
-            startActivity(intent);
+//            PlaceInfo place = FavoritePlacesManager.getInstance().places.get(position);
+//            GlobalVars.currentPlace = place;
+//            Intent intent = new Intent(MainActivity.this, PlaceDetailActivity.class);
+//            startActivity(intent);
         }
     }
 
@@ -326,12 +344,12 @@ public class MainActivity extends FragmentActivity implements
                 GlobalVars.drawer = GlobalVars.DrawerType.KEYWORDS;
                 break;
             case R.id.btnOpenPlaceDrawer:
-                adapterPlace.updateData(GlobalVars.currentPlaceList.places);
+                adapterPlace.updateData(GlobalVars.currentPlaceList);
                 drawerLayout.openDrawer(Gravity.RIGHT);
                 GlobalVars.drawer = GlobalVars.DrawerType.SEARCH_PLACES;
                 break;
             case R.id.btnOpenFavoriteDrawer:
-                adapterFavPlace.updateData(FavoritePlacesManager.getInstance().places);
+                //adapterFavPlace.updateData(FavoritePlacesManager.getInstance().places);
                 drawerLayout.openDrawer(Gravity.RIGHT);
                 GlobalVars.drawer = GlobalVars.DrawerType.FAVORITE_PLACES;
                 break;
@@ -367,5 +385,42 @@ public class MainActivity extends FragmentActivity implements
         if (GlobalVars.getUserId() != 0) {
             btnLogin.setImageResource(R.drawable.btn_logout);
         }
+    }
+
+    @Override
+    public void OnMyServerNearBySearchStart() {
+
+    }
+
+    @Override
+    public void OnMyServerNearBySearchSuccess(List<MyServerPlaceInfo> items) {
+        isMyServerDone = true;
+
+        MyServerPlaceImporter importer = new MyServerPlaceImporter();
+
+        for (int i = 0; i < items.size(); ++i) {
+            if (importer.IsValidInput(items.get(i))) {
+                PlaceInfo place = importer.Convert(items.get(i));
+                GlobalVars.currentPlaceList.add(place);
+
+                LatLng position = new LatLng(place.lat, place.lng);
+                Marker marker = mMap.addMarker(new MarkerOptions()
+                        .position(position));
+
+                GlobalVars.markerData.put(marker, place);
+                markers.add(marker);
+            }
+        }
+
+        if (isGoogleDone && isMyServerDone)
+            progressDialog.dismiss();
+    }
+
+    @Override
+    public void OnMyServerNearBySearchFailed(String error_message) {
+        isMyServerDone = true;
+
+        if (isGoogleDone && isMyServerDone)
+            progressDialog.dismiss();
     }
 }

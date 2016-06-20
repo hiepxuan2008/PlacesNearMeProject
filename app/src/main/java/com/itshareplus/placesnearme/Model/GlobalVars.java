@@ -3,6 +3,7 @@ package com.itshareplus.placesnearme.Model;
 import com.google.android.gms.games.PlayerRef;
 import com.google.android.gms.games.stats.PlayerStatsRef;
 import com.google.android.gms.maps.model.Marker;
+import com.itshareplus.placesnearme.Architecture.Importer.PlaceInfo;
 import com.itshareplus.placesnearme.Module.PlayerPrefs;
 
 import java.util.HashMap;
@@ -17,9 +18,12 @@ public class GlobalVars {
     public enum DrawerType {KEYWORDS, SEARCH_PLACES, FAVORITE_PLACES};
 
     public static MyLocation location = new MyLocation(10.7629886, 106.6821975);
-    public static PlaceList currentPlaceList;
-    public static Place currentPlace;
-    public static HashMap<Marker, Place> markerData = new HashMap<>();
+    public static PlaceInfo currentPlace;
+    public static List<PlaceInfo> currentPlaceList;
+    public static List<PlaceInfo> currentGooglePlaceList;
+    public static List<PlaceInfo> currentMyServerPlaceList;
+
+    public static HashMap<Marker, PlaceInfo> markerData = new HashMap<>();
     public static KeywordItem keywordItem;
     public static DrawerType drawer;
     public static String currentPhotoPath;

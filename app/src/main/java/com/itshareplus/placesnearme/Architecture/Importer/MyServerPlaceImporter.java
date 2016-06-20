@@ -8,7 +8,7 @@ public class MyServerPlaceImporter extends PlaceImporter {
     public PlaceInfo Convert(Object input) {
         MyServerPlaceInfo info =(MyServerPlaceInfo)input;
         PlaceInfo result = new PlaceInfo();
-        result.googlePlaceId = info.googlePlaceId;
+        result.googlePlaceId = "";
         result.placeId = info.placeId;
         result.name = info.name;
         result.address = info.address;

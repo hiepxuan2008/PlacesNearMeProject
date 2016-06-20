@@ -194,7 +194,7 @@ public class StatusActivity extends AppCompatActivity implements View.OnClickLis
             return;
         }
 
-        new PostStatus(this, GlobalVars.getUserId(),GlobalVars.currentPlace.mPlaceId, etStatus.getText().toString(), null).execute();
+        new PostStatus(this, GlobalVars.getUserId(),GlobalVars.currentPlace.getStandardPlaceId(), etStatus.getText().toString(), null).execute();
     }
 
     private boolean IsLogined() {
